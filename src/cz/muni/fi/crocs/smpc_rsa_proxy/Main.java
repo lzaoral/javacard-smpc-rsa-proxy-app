@@ -23,7 +23,6 @@ public class Main {
                 System.exit(1);
             }
 
-            // TODO: generate keys
             if (args[1].equals("generate")) {
                 smpcRSA.generateKeys();
                 smpcRSA.disconnect();
