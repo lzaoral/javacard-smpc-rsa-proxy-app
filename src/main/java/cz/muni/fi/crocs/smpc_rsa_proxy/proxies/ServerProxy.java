@@ -5,7 +5,18 @@ import cz.muni.fi.crocs.smpc_rsa_proxy.cardTools.Util;
 import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
-import java.io.*;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+
 import java.math.BigInteger;
 import java.util.ArrayList;
 
@@ -15,7 +26,7 @@ import java.util.ArrayList;
  *
  * @author Petr Svenda, Dusan Klinec (ph4r05)
  */
-public class ServerAPDU extends AbstractAPDU {
+public class ServerProxy extends AbstractProxy {
     public static final byte CLA_RSA_SMPC_SERVER = (byte) 0x83;
 
     public static final byte INS_GENERATE_KEYS = 0x10;
@@ -38,7 +49,7 @@ public class ServerAPDU extends AbstractAPDU {
      *
      * @throws CardException
      */
-    public ServerAPDU() throws CardException {
+    public ServerProxy() throws CardException {
         super(Util.hexStringToByteArray(APPLET_AID));
     }
 

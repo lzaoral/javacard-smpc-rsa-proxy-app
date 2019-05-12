@@ -5,30 +5,30 @@ import cz.muni.fi.crocs.smpc_rsa_proxy.cardTools.CardManager;
 import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public abstract class AbstractAPDU {
+public abstract class AbstractProxy {
 
-    public static final String CLIENT_KEYS_CLIENT_SHARE_FILE = "client_card.key";
-    public static final String CLIENT_KEYS_SERVER_SHARE_FILE = "for_server.key";
-    public static final String PUBLIC_KEY_FILE = "public.key";
-    public static final String MESSAGE_FILE = "message.txt";
-    public static final String CLIENT_SIG_SHARE_FILE = "client.sig";
-    public static final String FINAL_SIG_FILE = "final.sig";
+    protected static final String CLIENT_KEYS_CLIENT_SHARE_FILE = "client_card.key";
+    protected static final String CLIENT_KEYS_SERVER_SHARE_FILE = "for_server.key";
+    protected static final String PUBLIC_KEY_FILE = "public.key";
+    protected static final String MESSAGE_FILE = "message.txt";
+    protected static final String CLIENT_SIG_SHARE_FILE = "client.sig";
+    protected static final String FINAL_SIG_FILE = "final.sig";
 
-    public static final String SW_CONDITIONS_NOT_SATISFIED = "6985";
-    public static final String SW_COMMAND_NOT_ALLOWED = "6986";
+    protected static final String SW_CONDITIONS_NOT_SATISFIED = "6985";
+    protected static final String SW_COMMAND_NOT_ALLOWED = "6986";
 
-    public static final byte P2_PART_0 = 0x00;
-    public static final byte P2_PART_1 = 0x01;
-    public static final byte P2_SINGLE = 0x00;
-    public static final byte P2_DIVIDED = 0x10;
+    protected static final byte P2_PART_0 = 0x00;
+    protected static final byte P2_PART_1 = 0x01;
+    private static final byte P2_SINGLE = 0x00;
+    private static final byte P2_DIVIDED = 0x10;
 
-    public static final byte NONE = 0x00;
+    protected static final byte NONE = 0x00;
 
-    public static final short PARTIAL_MODULUS_LENGTH = 256;
+    protected static final short PARTIAL_MODULUS_LENGTH = 256;
     private static final short MAX_CMD_APDU_LENGTH = 255;
 
     private final CardManager cardMgr;
@@ -38,13 +38,14 @@ public abstract class AbstractAPDU {
      * @param appletID
      * @throws CardException
      */
-    public AbstractAPDU(byte[] appletID) throws CardException {
+    AbstractProxy(byte[] appletID) throws CardException {
         cardMgr = new CardManager(appletID);
 
         printAndFlush("Connecting to card...");
         if (!cardMgr.connect()) {
-            System.err.println(" \u001B[1;32mOK\u001B[0m");
-            System.exit(1); // TODO: ugly
+            printNOK();
+            throw new CardException("Make sure that the terminal and card are connected " +
+                    "and that the correct applet is installed.");
         }
 
         printOK();
@@ -96,8 +97,7 @@ public abstract class AbstractAPDU {
      *
      */
     protected void resetHelper(byte cla, byte ins) throws CardException {
-        printAndFlush("Resettting...");
-
+        printAndFlush("Resetting...");
         handleError(transmit(new CommandAPDU(cla, ins, NONE, NONE)), "Reset");
         printOK();
     }
@@ -149,13 +149,23 @@ public abstract class AbstractAPDU {
      *
      * @param str
      */
-    public void printAndFlush(String str) {
+    protected void printAndFlush(String str) {
         System.out.print(str);
         System.out.flush();
     }
 
-    public void printOK() {
+    /**
+     *
+     */
+    protected void printOK() {
         printAndFlush(" \u001B[1;32mOK\u001B[0m" + System.lineSeparator());
+    }
+
+    /**
+     *
+     */
+    protected void printNOK() {
+        System.err.println(" \u001B[1;31mNOK\u001B[0m");
     }
 
     /**
