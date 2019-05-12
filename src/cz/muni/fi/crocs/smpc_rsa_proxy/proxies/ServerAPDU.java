@@ -135,6 +135,9 @@ public class ServerAPDU extends AbstractAPDU {
 
             if (reader.readLine() != null)
                 throw new IOException(String.format("Wrong '%s' file format.", CLIENT_KEYS_CLIENT_SHARE_FILE));
+        } catch (FileNotFoundException e) {
+            System.err.println("TODO:"); //TODO:
+            throw e;
         }
 
         transmitNumber(APDU_SET_MESSAGE, "Set message");
@@ -164,6 +167,11 @@ public class ServerAPDU extends AbstractAPDU {
             writer.write(System.lineSeparator());
             writer.flush();
         }
+    }
+
+    @Override
+    public void reset() throws CardException {
+        resetHelper(CLA_RSA_SMPC_SERVER, INS_RESET);
     }
 
 }

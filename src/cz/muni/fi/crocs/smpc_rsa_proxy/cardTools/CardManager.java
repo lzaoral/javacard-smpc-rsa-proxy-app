@@ -9,11 +9,9 @@ import java.util.List;
  * @author Petr Svenda
  */
 public class CardManager {
-    protected boolean bDebug = false;
-    protected byte[] appletId = null;
-    protected Long lastTransmitTime = (long) 0;
-    protected CommandAPDU lastCommand = null;
-    protected CardChannel channel = null;
+    private boolean bDebug = false;
+    private byte[] appletId;
+    private CardChannel channel = null;
     
     public CardManager(byte[] appletAID) {
         this.appletId = appletAID;
@@ -22,17 +20,17 @@ public class CardManager {
     /**
      * Card connect
      * @return true if connected
-     * @throws Exception exceptions from underlying connects
+     * @throws CardException exceptions from underlying connects
      */
-    public boolean Connect() throws CardException {
-        return (channel = ConnectPhysicalCard(0)) != null;
+    public boolean connect() throws CardException {
+        return (channel = connectPhysicalCard()) != null;
     }
     
-    public void Disconnect(boolean bReset) throws CardException {
-        channel.getCard().disconnect(bReset); // Disconnect from the card
+    public void disconnect(boolean bReset) throws CardException {
+        channel.getCard().disconnect(bReset);
     }
 
-    public CardChannel ConnectPhysicalCard(int targetReaderIndex) throws CardException {
+    private CardChannel connectPhysicalCard() throws CardException {
         if (bDebug)
             System.out.print("Looking for physical cards... ");
 
@@ -41,7 +39,7 @@ public class CardManager {
 
         boolean card_found = false;
         CardTerminal terminal;
-        Card card = null;
+        Card card;
         try {
             for (CardTerminal t : factory.terminals().list()) {
                 terminals.add(t);
@@ -56,15 +54,17 @@ public class CardManager {
             return null;
         }
 
-        if (card_found) {
+        if (!card_found) {
+            return null;
+        } else {
             if (bDebug)
                 System.out.println("Cards found: " + terminals);
 
-            terminal = terminals.get(targetReaderIndex); // Prioritize physical card over simulations
+            terminal = terminals.get(0); // Prioritize physical card over simulations
 
             if (bDebug)
                 System.out.print("Connecting...");
-            card = terminal.connect("*"); // Connect with the card
+            card = terminal.connect("*"); // connect with the card
 
             if (bDebug) {
                 System.out.println(" Done.");
@@ -82,15 +82,12 @@ public class CardManager {
 
             CommandAPDU cmd = new CommandAPDU(0x00, 0xa4, 0x04, 0x00, appletId);
             transmit(cmd);
-        } else {
-            return null;
         }
 
         return card.getBasicChannel();
     }
     
     public ResponseAPDU transmit(CommandAPDU cmd) throws CardException {
-        lastCommand = cmd;
         if (bDebug) {
             log(cmd);
         }
@@ -98,17 +95,16 @@ public class CardManager {
         long elapsed = -System.currentTimeMillis();
         ResponseAPDU response = channel.transmit(cmd);
         elapsed += System.currentTimeMillis();
-        lastTransmitTime = elapsed;
 
         if (bDebug) {
-            log(response, lastTransmitTime);
+            log(response, elapsed);
         }
 
         return response;
     }
 
     private void log(CommandAPDU cmd) {
-        System.out.printf("--> %s\n", Util.toHex(cmd.getBytes()),
+        System.out.printf("--> %s (%d)\n", Util.toHex(cmd.getBytes()),
                 cmd.getBytes().length);
     }
 
@@ -123,9 +119,8 @@ public class CardManager {
         }
     }
 
-    public CardManager setbDebug(boolean bDebug) {
+    public void setbDebug(boolean bDebug) {
         this.bDebug = bDebug;
-        return this;
     }
 
 }

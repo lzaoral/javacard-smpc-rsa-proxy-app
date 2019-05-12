@@ -108,4 +108,9 @@ public class ClientFullAPDU extends AbstractAPDU {
         }
     }
 
+    @Override
+    public void reset() throws CardException {
+        resetHelper(CLA_RSA_SMPC_CLIENT, INS_RESET);
+    }
+
 }

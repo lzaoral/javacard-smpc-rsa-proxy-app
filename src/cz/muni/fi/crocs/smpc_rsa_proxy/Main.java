@@ -26,18 +26,26 @@ public class Main {
             // TODO: generate keys
             if (args[1].equals("generate")) {
                 smpcRSA.generateKeys();
-                System.exit(0);
+                smpcRSA.disconnect();
+                return;
             }
 
             if (args[1].equals("sign")) {
                 smpcRSA.signMessage();
-                System.exit(0);
+                smpcRSA.disconnect();
+                return;
             }
 
-            // header
+            if (args[1].equals("reset")) {
+                smpcRSA.reset();
+                smpcRSA.disconnect();
+                return;
+            }
+
+            smpcRSA.disconnect();
             System.exit(1);
         } catch (Exception e) {
-            System.err.print(e.getMessage());
+            System.err.println(e.getMessage());
             System.exit(1);
         }
     }

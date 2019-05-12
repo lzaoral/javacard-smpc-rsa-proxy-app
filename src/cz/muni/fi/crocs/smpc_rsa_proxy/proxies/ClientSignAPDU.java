@@ -43,8 +43,28 @@ public class ClientSignAPDU extends AbstractAPDU {
      * @throws CardException
      */
     public void setKeys() throws IOException, CardException {
-        ArrayList<CommandAPDU> APDU_SET_N = new ArrayList<>();
-        ArrayList<CommandAPDU> APDU_SET_D = new ArrayList<>();
+        ArrayList<CommandAPDU> cmdD1 = new ArrayList<>();
+        ArrayList<CommandAPDU> cmdN1 = new ArrayList<>();
+
+        loadKyes(cmdD1, cmdN1);
+
+        printAndFlush("Transmitting keys...");
+
+        try {
+            transmitNumber(cmdD1, "Set D'1");
+            transmitNumber(cmdN1, "Set N1");
+        } catch (CardException e) {
+            if (e.getMessage().contains(SW_COMMAND_NOT_ALLOWED))
+                System.err.println("Keys have already been set. Please, reset the card first.");
+
+            throw e;
+        }
+
+        printOK();
+    }
+
+    private void loadKyes(ArrayList<CommandAPDU> cmdD1, ArrayList<CommandAPDU> cmdN1) throws IOException {
+        printAndFlush("Loading keys...");
 
         try (InputStream in = new FileInputStream(CLIENT_KEYS_CLIENT_SHARE_FILE)) {
             BufferedReader reader = new BufferedReader(new InputStreamReader(in));
@@ -52,7 +72,7 @@ public class ClientSignAPDU extends AbstractAPDU {
             byte[] num = Util.hexStringToByteArray(reader.readLine());
             BigInteger d = new BigInteger(1, num);
 
-            setNumber(APDU_SET_D, num, CLA_RSA_SMPC_CLIENT_SIGN, INS_SET_KEYS, P1_SET_D);
+            setNumber(cmdD1, num, CLA_RSA_SMPC_CLIENT_SIGN, INS_SET_KEYS, P1_SET_D);
 
             num = Util.hexStringToByteArray(reader.readLine());
             BigInteger n = new BigInteger(1, num);
@@ -63,14 +83,18 @@ public class ClientSignAPDU extends AbstractAPDU {
             if (d.compareTo(n) > 0)
                 throw new IllegalArgumentException("Private key cannot be larger than modulus.");
 
-            setNumber(APDU_SET_N, num, CLA_RSA_SMPC_CLIENT_SIGN, INS_SET_KEYS, P1_SET_N);
+            setNumber(cmdN1, num, CLA_RSA_SMPC_CLIENT_SIGN, INS_SET_KEYS, P1_SET_N);
 
             if (reader.readLine() != null)
                 throw new IOException(String.format("Wrong '%s' file format.", CLIENT_KEYS_CLIENT_SHARE_FILE));
+
+        } catch (FileNotFoundException e) {
+            System.err.println(" \u001B[1;31mNOK\u001B[0m");
+            System.err.println("The keys have not been generated. Run the reference implementation first.");
+            throw e;
         }
 
-        transmitNumber(APDU_SET_D, "Set D'1");
-        transmitNumber(APDU_SET_N, "Set N1");
+        printOK();
     }
 
     @Override
@@ -80,8 +104,34 @@ public class ClientSignAPDU extends AbstractAPDU {
 
     @Override
     public void signMessage() throws IOException, CardException {
+        final ArrayList<CommandAPDU> cmdMessage = new ArrayList<>();
+        final String message = loadMessage(cmdMessage);
+
+        printAndFlush("Transmitting message...");
+        try {
+            transmitNumber(cmdMessage, "Set message");
+        } catch (CardException e) {
+            if (e.getMessage().contains(SW_CONDITIONS_NOT_SATISFIED))
+                System.err.println("The client keys share has not been set!");
+
+            throw e;
+        }
+        printOK();
+
+        printAndFlush("Signing...");
+        ResponseAPDU respSign = transmit(new CommandAPDU(
+                CLA_RSA_SMPC_CLIENT_SIGN, INS_SIGNATURE, NONE, NONE, PARTIAL_MODULUS_LENGTH
+        ));
+        handleError(respSign, "Signing");
+        printOK();
+
+        saveSignature(respSign, message);
+    }
+
+    private String loadMessage(ArrayList<CommandAPDU> cmdMessage) throws IOException {
+        printAndFlush("Loading message...");
+
         String message;
-        ArrayList<CommandAPDU> APDU_MESSAGE = new ArrayList<>();
 
         try (InputStream in = new FileInputStream(MESSAGE_FILE)) {
             BufferedReader reader = new BufferedReader(new InputStreamReader(in));
@@ -92,27 +142,40 @@ public class ClientSignAPDU extends AbstractAPDU {
             if (num.length > PARTIAL_MODULUS_LENGTH)
                 throw new IllegalArgumentException("Message key cannot be larger than modulus.");
 
-            setNumber(APDU_MESSAGE, num, CLA_RSA_SMPC_CLIENT_SIGN, INS_SET_MESSAGE, NONE);
+            setNumber(cmdMessage, num, CLA_RSA_SMPC_CLIENT_SIGN, INS_SET_MESSAGE, NONE);
 
             if (reader.readLine() != null)
                 throw new IOException(String.format("Wrong '%s' file format.", MESSAGE_FILE));
+        } catch (FileNotFoundException e) {
+            System.err.println(" \u001B[1;31mNOK\u001B[0m");
+            System.err.println("The message file is missing.");
+            throw e;
         }
 
-        transmitNumber(APDU_MESSAGE, "Set message");
+        printOK();
+        return message;
+    }
 
-        ResponseAPDU res = transmit(new CommandAPDU(
-                CLA_RSA_SMPC_CLIENT_SIGN, INS_SIGNATURE, NONE, NONE, PARTIAL_MODULUS_LENGTH
-        ));
-        handleError(res, "Signing");
+    private void saveSignature(ResponseAPDU respSign, String message) throws IOException {
+        printAndFlush("Storing signature...");
 
         try (OutputStream out = new FileOutputStream(CLIENT_SIG_SHARE_FILE)) {
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out));
             writer.write(String.format(
-                    "%s%n%s%n", message, Util.toHex(Util.trimLeadingZeroes(res.getData()))
+                    "%s%n%s%n", message, Util.toHex(Util.trimLeadingZeroes(respSign.getData()))
             ));
             writer.flush();
+        } catch (FileNotFoundException e) {
+            System.err.println(" \u001B[1;31mNOK\u001B[0m");
+            throw e;
         }
 
+        printOK();
+    }
+
+    @Override
+    public void reset() throws CardException {
+        resetHelper(CLA_RSA_SMPC_CLIENT_SIGN, INS_RESET);
     }
 
 }
