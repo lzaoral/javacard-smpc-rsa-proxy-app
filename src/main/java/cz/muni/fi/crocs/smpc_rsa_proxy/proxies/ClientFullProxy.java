@@ -19,7 +19,7 @@ import java.io.OutputStreamWriter;
  * @author Petr Svenda, Dusan Klinec (ph4r05), Lukas Zaoral
  */
 public class ClientFullProxy extends AbstractClientProxy {
-    private static final byte CLA_RSA_SMPC_CLIENT = (byte) 0x81;
+    private static final byte CLA_RSA_SMPC_CLIENT = (byte) 0x90;
 
     private static final byte INS_GENERATE_KEYS = 0x10;
     private static final byte INS_GET_KEYS = 0x12;
