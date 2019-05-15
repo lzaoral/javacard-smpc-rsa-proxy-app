@@ -31,7 +31,7 @@ public class ServerProxy extends AbstractProxy {
 
     public static final byte INS_GENERATE_KEYS = 0x10;
     public static final byte INS_SET_CLIENT_KEYS = 0x12;
-    public static final byte INS_GET_PUBLIC_N = 0x14;
+    public static final byte INS_GET_PUBLIC_MODULUS = 0x14;
     public static final byte INS_SET_CLIENT_SIGNATURE = 0x16;
     public static final byte INS_SIGNATURE = 0x18;
     public static final byte INS_GET_SIGNATURE = 0x20;
@@ -43,7 +43,7 @@ public class ServerProxy extends AbstractProxy {
     public static final byte P1_SET_MESSAGE = 0x00;
     public static final byte P1_SET_SIGNATURE = 0x01;
 
-    private static String APPLET_AID = "0102030405060708090304";
+    private static String APPLET_AID = "0102030405060708090104";
 
     /**
      *
@@ -56,7 +56,7 @@ public class ServerProxy extends AbstractProxy {
     @Override
     public void generateKeys() throws CardException, IOException {
         handleError(transmit(new CommandAPDU(
-                CLA_RSA_SMPC_SERVER, INS_GENERATE_KEYS, 0x00, 0x00
+                CLA_RSA_SMPC_SERVER, INS_GENERATE_KEYS, NONE, NONE
         )), "Key generation");
 
         setClientKeys();
@@ -100,11 +100,11 @@ public class ServerProxy extends AbstractProxy {
 
         // zjednodusit
         res.add(transmit(new CommandAPDU(
-            CLA_RSA_SMPC_SERVER, INS_GET_PUBLIC_N, 0x00, P2_PART_0
+            CLA_RSA_SMPC_SERVER, INS_GET_PUBLIC_MODULUS, 0x00, P2_PART_0
         )));
 
         res.add(transmit(new CommandAPDU(
-                CLA_RSA_SMPC_SERVER, INS_GET_PUBLIC_N, 0x00, P2_PART_1
+                CLA_RSA_SMPC_SERVER, INS_GET_PUBLIC_MODULUS, 0x00, P2_PART_1
         )));
 
         try (OutputStream out = new FileOutputStream(PUBLIC_KEY_FILE)) {

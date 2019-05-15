@@ -16,24 +16,24 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 
 /**
- * Test class.
+ * TODO:Test class.
  *
  * Note: If simulator cannot be started try adding "-noverify" JVM parameter
  *
- * @author Petr Svenda, Dusan Klinec (ph4r05), Lukas Zaoral
+ * @author Lukáš Zaoral
  */
 public class ClientSignProxy extends AbstractClientProxy {
-    private static final byte CLA_RSA_SMPC_CLIENT_SIGN = (byte) 0x80;
+    public static final byte CLA_RSA_SMPC_CLIENT_SIGN = (byte) 0x80;
 
-    private static final byte INS_SET_KEYS = 0x10;
-    private static final byte INS_SET_MESSAGE = 0x12;
-    private static final byte INS_SIGNATURE = 0x14;
-    private static final byte INS_RESET = 0x16;
+    public static final byte INS_SET_KEYS = 0x10;
+    public static final byte INS_SET_MESSAGE = 0x12;
+    public static final byte INS_SIGNATURE = 0x14;
+    public static final byte INS_RESET = 0x16;
 
-    private static final byte P1_SET_D1_CLIENT = 0x00;
-    private static final byte P1_SET_N1 = 0x01;
+    public static final byte P1_SET_D1_CLIENT = 0x00;
+    public static final byte P1_SET_N1 = 0x01;
 
-    private static String APPLET_AID = "0102030405060708090102";
+    public static String APPLET_AID = "0102030405060708090102";
 
     /**
      *
@@ -116,7 +116,7 @@ public class ClientSignProxy extends AbstractClientProxy {
                 throw new IOException(String.format("Wrong '%s' file format.", CLIENT_KEYS_CLIENT_SHARE_FILE));
 
         } catch (FileNotFoundException e) {
-            System.err.println(" \u001B[1;31mNOK\u001B[0m");
+            printNOK();
             System.err.println("The keys have not been generated. Run the reference implementation first.");
             throw e;
         }

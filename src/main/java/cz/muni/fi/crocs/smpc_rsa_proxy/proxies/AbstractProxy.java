@@ -129,7 +129,7 @@ public abstract class AbstractProxy {
      * @param debug
      */
     public void setDebug(boolean debug) {
-        cardMgr.setbDebug(debug);
+        cardMgr.setBDebug(debug);
     }
 
     /**
@@ -141,7 +141,7 @@ public abstract class AbstractProxy {
     protected void handleError(ResponseAPDU res, String operation) throws CardException {
         if (res.getSW() != 0x9000) {
             System.err.println(" \u001B[1;31mNOK\u001B[0m");
-            throw new CardException(String.format("%s: %02X", operation, res.getSW()));
+            throw new CardException(String.format("%s SW: %02X", operation, res.getSW()));
         }
     }
 
@@ -173,7 +173,7 @@ public abstract class AbstractProxy {
      * @throws CardException
      */
     public void disconnect() throws CardException {
-        cardMgr.disconnect(false);
+        cardMgr.disconnect();
     }
 
 }

@@ -21,6 +21,11 @@ import java.util.ArrayList;
 
 public abstract class AbstractClientProxy extends AbstractProxy {
 
+    /**
+     *
+     * @param appletID
+     * @throws CardException
+     */
     AbstractClientProxy(byte[] appletID) throws CardException {
         super(appletID);
     }
@@ -42,7 +47,10 @@ public abstract class AbstractClientProxy extends AbstractProxy {
             transmitNumber(cmdMessage, "Set message");
         } catch (CardException e) {
             if (e.getMessage().contains(SW_CONDITIONS_NOT_SATISFIED))
-                System.err.println("The client keys share has not been set!");
+                System.err.println("The client keys have not been " +
+                        (cla == ClientSignProxy.CLA_RSA_SMPC_CLIENT_SIGN ? "set" : "exported") +
+                        " yet!"
+                );
 
             throw e;
         }

@@ -7,6 +7,7 @@ import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 
 import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -19,18 +20,18 @@ import java.io.OutputStreamWriter;
  * @author Petr Svenda, Dusan Klinec (ph4r05), Lukas Zaoral
  */
 public class ClientFullProxy extends AbstractClientProxy {
-    private static final byte CLA_RSA_SMPC_CLIENT = (byte) 0x90;
+    public static final byte CLA_RSA_SMPC_CLIENT = (byte) 0x80;
 
-    private static final byte INS_GENERATE_KEYS = 0x10;
-    private static final byte INS_GET_KEYS = 0x12;
-    private static final byte INS_SET_MESSAGE = 0x14;
-    private static final byte INS_SIGNATURE = 0x16;
-    private static final byte INS_RESET = 0x18;
+    public static final byte INS_GENERATE_KEYS = 0x10;
+    public static final byte INS_GET_KEYS = 0x12;
+    public static final byte INS_SET_MESSAGE = 0x14;
+    public static final byte INS_SIGNATURE = 0x16;
+    public static final byte INS_RESET = 0x18;
 
-    private static final byte P1_GET_D1_SERVER = 0x00;
-    private static final byte P1_GET_N1 = 0x01;
+    public static final byte P1_GET_D1_SERVER = 0x00;
+    public static final byte P1_GET_N1 = 0x01;
 
-    private static String APPLET_AID = "0102030405060708090203";
+    public static String APPLET_AID = "0102030405060708090103";
 
     /**
      *
@@ -44,14 +45,16 @@ public class ClientFullProxy extends AbstractClientProxy {
     public void generateKeys() throws CardException, IOException {
         printAndFlush("Generating keys...");
 
+        try {
+            handleError(transmit(new CommandAPDU(CLA_RSA_SMPC_CLIENT, INS_GENERATE_KEYS, NONE, NONE)), "Keygen");
+        } catch (CardException e) {
+            if (e.getMessage().contains(SW_COMMAND_NOT_ALLOWED))
+                System.err.println("Keys have already been set. Please, reset the card first.");
 
-        // TODO: regeneration
-        handleError(transmit(new CommandAPDU(
-                CLA_RSA_SMPC_CLIENT, INS_GENERATE_KEYS, NONE, NONE
-        )), "Key generation");
+            throw e;
+        }
 
         printOK();
-
         getKeys();
     }
 
@@ -73,25 +76,36 @@ public class ClientFullProxy extends AbstractClientProxy {
     private void getKeys() throws IOException, CardException {
         printAndFlush("Storing the server client keys share...");
 
-        // TODO: order
-        ResponseAPDU dServer = transmit(new CommandAPDU(
-                CLA_RSA_SMPC_CLIENT, INS_GET_KEYS, P1_GET_D1_SERVER, NONE, PARTIAL_MODULUS_LENGTH
-        ));
-        handleError(dServer, "Get d1Server");
+        ResponseAPDU d1Server, n1;
 
-        ResponseAPDU n = transmit(new CommandAPDU(
-                CLA_RSA_SMPC_CLIENT, INS_GET_KEYS, P1_GET_N1, NONE, PARTIAL_MODULUS_LENGTH
-        ));
-        handleError(n, "Get n1");
+        try {
+            d1Server = transmit(new CommandAPDU(
+                    CLA_RSA_SMPC_CLIENT, INS_GET_KEYS, P1_GET_D1_SERVER, NONE, PARTIAL_MODULUS_LENGTH
+            ));
+            handleError(d1Server, "Get D''1");
 
-        // TODO: fail
-        try (OutputStream out = new FileOutputStream(CLIENT_KEYS_SERVER_SHARE_FILE)) {
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out));
+            n1 = transmit(new CommandAPDU(
+                    CLA_RSA_SMPC_CLIENT, INS_GET_KEYS, P1_GET_N1, NONE, PARTIAL_MODULUS_LENGTH
+            ));
+            handleError(n1, "Get N1");
 
-            writer.write(String.format("%s%n%s%n", Util.toHex(Util.trimLeadingZeroes(dServer.getData())),
-                    Util.toHex(Util.trimLeadingZeroes(n.getData()))));
 
-            writer.flush();
+            try (OutputStream out = new FileOutputStream(CLIENT_KEYS_SERVER_SHARE_FILE)) {
+                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out));
+
+                writer.write(String.format("%s%n%s%n", Util.toHex(Util.trimLeadingZeroes(d1Server.getData())),
+                        Util.toHex(Util.trimLeadingZeroes(n1.getData()))));
+
+                writer.flush();
+            }
+
+        } catch (CardException e) {
+            System.err.println("The client keys has not been generated yet!");
+            throw e;
+        } catch (FileNotFoundException e) {
+            printNOK();
+            System.err.println("The keys have not been generated. Run the reference implementation first.");
+            throw e;
         }
 
         printOK();
