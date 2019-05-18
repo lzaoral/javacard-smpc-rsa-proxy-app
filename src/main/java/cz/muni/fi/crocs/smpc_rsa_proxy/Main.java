@@ -7,50 +7,90 @@ import cz.muni.fi.crocs.smpc_rsa_proxy.proxies.ServerProxy;
 
 import javax.smartcardio.CardException;
 
+/**
+ * The {@link Main} class represents a handler of given
+ * user commands.
+ *
+ * @author Lukas Zaoral
+ */
 public class Main {
 
     /**
-     *
+     * Enum representing the allowed actions.
+     */
+    enum Action {
+        GENERATE,
+        SIGN,
+        RESET,
+        UNKNOWN
+    }
+
+    /**
+     * Prints out the usage message.
      */
     private static void printUsage() {
-        System.err.println(
-            "Unknown parameters.\n" +
-            "USAGE: [executable] [mode] [action]\n" +
-            "    Modes: client-sign, client-full, server\n" +
-            "    Actions:\n" +
-            "        generate - Set the [client-sign] keys or\n" +
-            "                   Generate the [client-full|server] keys\n" +
-            "        sign - Sign the message\n" +
-            "        reset - Reset the applet"
+        System.err.println("Unknown parameters.\n" +
+                "USAGE: [executable] [mode] [action]\n" +
+                "    Modes: client-sign, client-full, server\n" +
+                "    Actions:\n" +
+                "        generate - Set the [client-sign] keys or\n" +
+                "                   Generate the [client-full|server] keys\n" +
+                "        sign - Sign the message\n" +
+                "        reset - Reset the applet"
         );
     }
 
     /**
+     * Parses the given string to corresponding Action.
      *
-     * @param mode
+     * @return Action corresponding to the argument
+     */
+    private static Action parseAction(String action) {
+        if (action.equals("generate")) {
+            return Action.GENERATE;
+        }
+
+        if (action.equals("sign")) {
+            return Action.SIGN;
+        }
+
+        if (action.equals("verify")) {
+            return Action.RESET;
+        }
+
+        return Action.UNKNOWN;
+    }
+
+    /**
+     * Prints out the header with selected {@code mode}.
+     *
+     * @param mode name of the mode
      */
     private static void printHeader(String mode) {
         System.out.println("\u001B[1;33m*** SMPC RSA " + mode + " PROXY ***\u001B[0m");
     }
 
     /**
+     * Creates an instance of creates an instance of client-sign, client-full
+     * or server proxy depending on the {@code mode} parameter.
      *
-     * @param arg
-     * @return
-     * @throws CardException
+     * @param mode selected mode
+     * @return selected mode proxy or null if the mode does not exist
+     * @throws CardException if the terminal or card are missing
+     *                       or the selected applet is not installed
      */
-    private static AbstractProxy getMode(String arg) throws CardException {
-        if (arg.equals("client-sign")) {
+    private static AbstractProxy getMode(String mode) throws CardException {
+        if (mode.equals("client-sign")) {
             printHeader("CLIENT-SIGN");
             return new ClientSignProxy();
         }
 
-        if (arg.equals("client-full")) {
+        if (mode.equals("client-full")) {
             printHeader("CLIENT-FULL");
             return new ClientFullProxy();
         }
 
-        if (arg.equals("server")) {
+        if (mode.equals("server")) {
             printHeader("SERVER");
             return new ServerProxy();
         }
@@ -59,8 +99,9 @@ public class Main {
     }
 
     /**
+     * Main method of the SMPC RSA proxy application.
      *
-     * @param args
+     * @param args array of command-line arguments
      */
     public static void main(String[] args) {
         if (args.length != 2) {
@@ -68,38 +109,43 @@ public class Main {
             System.exit(1);
         }
 
+        AbstractProxy smpcRSA;
+        Action action = parseAction(args[1]);
+
+        // checked before connecting to card
+        if (action == Action.UNKNOWN) {
+            printUsage();
+            System.exit(1);
+        }
+
         try {
-            AbstractProxy smpcRSA = getMode(args[0]);
+            smpcRSA = getMode(args[0]);
             if (smpcRSA == null) {
                 printUsage();
                 System.exit(1);
             }
 
-            if (args[1].equals("generate")) {
-                smpcRSA.generateKeys();
-                smpcRSA.disconnect();
-                return;
-            }
+            switch (action) {
+                case GENERATE:
+                    smpcRSA.generateKeys();
+                    break;
 
-            if (args[1].equals("sign")) {
-                smpcRSA.signMessage();
-                smpcRSA.disconnect();
-                return;
-            }
+                case SIGN:
+                    smpcRSA.signMessage();
+                    break;
 
-            if (args[1].equals("reset")) {
-                smpcRSA.reset();
-                smpcRSA.disconnect();
-                return;
+                case RESET:
+                    smpcRSA.reset();
+                    break;
             }
 
             smpcRSA.disconnect();
-            printUsage();
-            System.exit(1);
 
         } catch (Exception e) {
+            System.err.println(" \u001B[1;31mNOK\u001B[0m");
             System.err.println(e.getMessage());
             System.exit(1);
         }
     }
+
 }

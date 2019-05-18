@@ -1,48 +1,72 @@
 package cz.muni.fi.crocs.smpc_rsa_proxy.cardTools;
 
+import java.util.Arrays;
+
 /**
+ * The {@link Util} static class provides tools for conversion
+ * between byte arrays and hex strings.
  *
- * @author Vasilios Mavroudis and Petr Svenda
+ * @author Vasilios Mavroudis, Petr Svenda, adapted by Lukas Zaoral
  */
 public class Util {
 
+    /**
+     * Converts the given byte array to a hex string
+     *
+     * @param bytes byte array
+     * @return converted hex string
+     */
     public static String toHex(byte[] bytes) {
-        return toHex(bytes, 0, bytes.length);
-    }
-
-    public static String toHex(byte[] bytes, int offset, int len) {
         StringBuilder result = new StringBuilder();
 
-        for (int i = offset; i < offset + len; i++) {
-            result.append(String.format("%02X", bytes[i]));
-        }
+        for (byte b : bytes)
+            result.append(String.format("%02X", b));
 
         return result.toString();
     }
 
-    public static byte[] hexStringToByteArray(String s) {
-        String sanitized = s.replace(" ", "");
+    /**
+     * Converts and trims the given byte array to a hex string.
+     * The input array is unchanged.
+     *
+     * @param bytes byte array
+     * @return converted and trimmed hex string
+     */
+    public static String toHexTrimmed(byte[] bytes) {
+        return toHex(trimLeadingZeroes(bytes));
+    }
+
+    /**
+     * Converts the given hex string to a byte array
+     *
+     * @param str hex string
+     * @return converted byte array
+     */
+    public static byte[] hexStringToByteArray(String str) {
+        String sanitized = str.replaceAll("\\s+", "");
         byte[] b = new byte[sanitized.length() / 2];
+
         for (int i = 0; i < b.length; i++) {
             int index = i * 2;
-            int v = Integer.parseInt(sanitized.substring(index, index + 2), 16);
-            b[i] = (byte) v;
+            b[i] = (byte) Integer.parseInt(sanitized.substring(index, index + 2), 16);
         }
-        return b;
-    }    
 
-    public static byte[] trimLeadingZeroes(byte[] array) {
+        return trimLeadingZeroes(b);
+    }
+
+    /**
+     * Removes leading zero bytes from given byte array
+     *
+     * @param array byte array
+     * @return trimmed byte array
+     */
+    private static byte[] trimLeadingZeroes(byte[] array) {
         short startOffset = 0;
-        for (byte b : array) {
-            if (b != 0)
-                break;
 
+        while (array[startOffset] == 0)
             startOffset++;
-        }
 
-        byte[] result = new byte[array.length - startOffset];
-        System.arraycopy(array, startOffset, result, 0, array.length - startOffset);
-        return result;
+        return Arrays.copyOfRange(array, startOffset, array.length - startOffset);
     }
 
 }

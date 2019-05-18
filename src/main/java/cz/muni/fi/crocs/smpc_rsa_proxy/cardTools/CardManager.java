@@ -12,15 +12,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The {@link CardManager} class represent a connection to the card.
+ * The {@link CardManager} class represents a connection
+ * to a smart card.
  *
- * @author Petr Svenda, Lukáš Zaoral
+ * @author Petr Svenda, adapated by Lukas Zaoral
  */
 public class CardManager {
     private boolean bDebug = false;
     private byte[] appletId;
     private CardChannel channel = null;
-    
+
     public CardManager(byte[] appletAID) {
         this.appletId = appletAID;
     }
@@ -49,8 +50,7 @@ public class CardManager {
 
             if (bDebug)
                 System.out.println("Success.");
-
-        } catch (Exception e) {
+        } catch (CardException e) {
             return false;
         }
 
@@ -71,7 +71,7 @@ public class CardManager {
 
         if (bDebug) {
             System.out.println(" Done.");
-            System.out.print("Smartcard: Selecting applet...");
+            System.out.print("Smart card: Selecting applet...");
         }
 
         CommandAPDU cmd = new CommandAPDU(0x00, 0xa4, 0x04, 0x00, appletId);
@@ -96,7 +96,7 @@ public class CardManager {
     /**
      * Transmit the given Command APDU to the card.
      *
-     * @param cmd Command APDU to be send
+     * @param cmd Command APDU to be sent
      * @return Response APDU
      * @throws CardException exceptions from underlying connections
      */

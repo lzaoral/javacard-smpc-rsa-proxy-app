@@ -7,74 +7,68 @@ import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 
 import java.util.ArrayList;
+import java.util.List;
 
+/**
+ * The {@link AbstractClientProxy} abstract class represents a common interface
+ * of a client party in the SMPC RSA scheme.
+ *
+ * @author Lukas Zaoral
+ */
 public abstract class AbstractClientProxy extends AbstractProxy {
 
     /**
+     * Connects to a card a selects a client applet with {@code appletID} ID.
      *
-     * @param appletID
-     * @throws CardException
+     * @param appletID byte array with an id of a given client applet
+     * @throws CardException if the terminal or card are missing or the applet is not installed
      */
     AbstractClientProxy(byte[] appletID) throws CardException {
         super(appletID);
     }
 
     /**
+     * Signs the the given message.
      *
-     * @param cla
-     * @param insSetMessage
-     * @param insSignature
-     * @throws CardException
-     * @throws IOException
+     * @param cla           class byte
+     * @param insSetMessage set message instruction byte
+     * @param insSignature  sign instruction byte
+     * @throws CardException if something on the smart card fails
+     * @throws IOException   if the file with message is missing or cannot be read
+     *                       or the file with client signature cannot be created or written to
      */
-    protected void clientSignMessage(byte cla, byte insSetMessage, byte insSignature) throws CardException, IOException {
-        ArrayList<CommandAPDU> cmdMessage = new ArrayList<>();
-        String message = clientSetMessage(cmdMessage, cla, insSetMessage);
+    protected void clientSignMessage(byte cla, byte insSetMessage, byte insSignature)
+            throws CardException, IOException {
 
-        printAndFlush("Transmitting message...");
-        try {
-            transmitNumber(cmdMessage, "Set message");
-        } catch (CardException e) {
-            if (e.getMessage().contains(SW_CONDITIONS_NOT_SATISFIED))
-                System.err.println("The client keys have not been " +
-                        (cla == ClientSignProxy.CLA_RSA_SMPC_CLIENT_SIGN ? "set" : "exported") +
-                        " yet!"
-                );
-
-            throw e;
-        }
-        printOK();
+        String message = clientSetMessage(cla, insSetMessage);
 
         printAndFlush("Signing...");
-        ResponseAPDU respSign = transmit(new CommandAPDU(cla, insSignature, NONE, NONE, PARTIAL_MODULUS_LENGTH));
-        handleError(respSign, "Signing");
+        ResponseAPDU respSign = transmit(new CommandAPDU(cla, insSignature, NONE, NONE, PARTIAL_MODULUS_LENGTH), "Sign");
         printOK();
 
         clientSaveSignature(respSign, message);
     }
 
     /**
+     * Loads the message from the {@code MESSAGE_FILE} file and transmits it to the smart card.
      *
-     * @param cmdMessage
-     * @param cla
-     * @param ins
-     * @return
-     * @throws IOException
+     * @param cla class byte
+     * @param ins instruction byte
+     * @return hex string with the message
+     * @throws CardException if something on the smart card fails
+     * @throws IOException   if the file with message is missing or cannot be read
      */
-    private String clientSetMessage(ArrayList<CommandAPDU> cmdMessage, byte cla, byte ins) throws IOException {
+    private String clientSetMessage(byte cla, byte ins) throws CardException, IOException {
         printAndFlush("Loading message...");
 
+        List<CommandAPDU> cmdMessage = new ArrayList<>();
         String message;
 
         try (InputStream in = new FileInputStream(MESSAGE_FILE)) {
@@ -84,42 +78,48 @@ public abstract class AbstractClientProxy extends AbstractProxy {
             byte[] num = Util.hexStringToByteArray(message);
 
             if (num.length > PARTIAL_MODULUS_LENGTH)
-                throw new IllegalArgumentException("Message key cannot be larger than modulus.");
+                throw new IOException("Message key cannot be larger than modulus.");
 
-            setNumber(cmdMessage, num, cla, ins, NONE);
+            cmdMessage.addAll(splitArrayToCmd(num, cla, ins, NONE));
 
             if (reader.readLine() != null)
                 throw new IOException(String.format("Wrong '%s' file format.", MESSAGE_FILE));
         } catch (FileNotFoundException e) {
-            printNOK();
             System.err.println("The message file is missing.");
             throw e;
         }
 
         printOK();
+
+        transmitMessage(cmdMessage);
         return message;
     }
 
     /**
+     * Transmits the message to the smart card.
      *
-     * @param respSign
-     * @param message
-     * @throws IOException
+     * @param cmdMessage list of commands to set the message
+     * @throws CardException if something on the smart card fails
+     */
+    private void transmitMessage(List<CommandAPDU> cmdMessage) throws CardException {
+        printAndFlush("Transmitting message...");
+        int res = transmitBatch(cmdMessage, "Set message", SW_CONDITIONS_NOT_SATISFIED).get(0).getSW();
+        if (res == SW_CONDITIONS_NOT_SATISFIED)
+            throw new CardException("The client keys have not been set/exported yet!");
+
+        printOK();
+    }
+
+    /**
+     * Saves the client signature share to the {@code CLIENT_SIG_SHARE_FILE} file.
+     *
+     * @param respSign Response APDU with client signature
+     * @param message  hex string with the message
+     * @throws IOException if the signature file cannot be created or written to
      */
     private void clientSaveSignature(ResponseAPDU respSign, String message) throws IOException {
         printAndFlush("Storing signature...");
-
-        try (OutputStream out = new FileOutputStream(CLIENT_SIG_SHARE_FILE)) {
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out));
-            writer.write(String.format(
-                    "%s%n%s%n", message, Util.toHex(Util.trimLeadingZeroes(respSign.getData()))
-            ));
-            writer.flush();
-        } catch (FileNotFoundException e) {
-            printNOK();
-            throw e;
-        }
-
+        storeData(CLIENT_SIG_SHARE_FILE, message, Util.toHexTrimmed(respSign.getData()));
         printOK();
     }
 }
