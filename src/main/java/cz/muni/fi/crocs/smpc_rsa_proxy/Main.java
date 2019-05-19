@@ -54,7 +54,7 @@ public class Main {
             return Action.SIGN;
         }
 
-        if (action.equals("verify")) {
+        if (action.equals("reset")) {
             return Action.RESET;
         }
 
@@ -109,17 +109,15 @@ public class Main {
             System.exit(1);
         }
 
-        AbstractProxy smpcRSA;
+        // check before connecting to the card
         Action action = parseAction(args[1]);
-
-        // checked before connecting to card
         if (action == Action.UNKNOWN) {
             printUsage();
             System.exit(1);
         }
 
         try {
-            smpcRSA = getMode(args[0]);
+            AbstractProxy smpcRSA = getMode(args[0]);
             if (smpcRSA == null) {
                 printUsage();
                 System.exit(1);
