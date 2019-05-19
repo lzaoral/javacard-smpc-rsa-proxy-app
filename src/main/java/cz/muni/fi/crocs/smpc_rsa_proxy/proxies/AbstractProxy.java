@@ -86,7 +86,8 @@ public abstract class AbstractProxy {
             throw new CardException("Make sure that the terminal and card are connected and that the correct applet is installed.\n\n" +
                     "Linux users beware: The path to 'libpcsclite.so' smart card library is hardcoded in the JDK.\n" +
                     "Some distributions (e.g. Ubuntu) use different path. Try running the application\n" +
-                    "with -Dsun.security.smartcardio.library={path_to_libpcsclite} flag.");
+                    "with '-Dsun.security.smartcardio.library={path_to_libpcsclite}' flag\n" +
+                    "or set the variable 'JAVA_TOOL_OPTIONS' to this value");
 
         printOK();
     }
@@ -272,13 +273,13 @@ public abstract class AbstractProxy {
     /**
      * Performs operation {@code ins} to get multipart data and stores them into {@code fileName} file.
      *
-     * @param fileName file name
+     * @param fileName  file name
      * @param firstLine first line of saved file
-     * @param opName name of operation
-     * @param cla class byte
-     * @param ins instruction byte
+     * @param opName    name of operation
+     * @param cla       class byte
+     * @param ins       instruction byte
      * @throws CardException if something on the smart card fails
-     * @throws IOException if the {@code fileName} file cannot be created or written to
+     * @throws IOException   if the {@code fileName} file cannot be created or written to
      */
     protected void storeMultipartData(String fileName, String firstLine, String opName, byte cla, byte ins)
             throws CardException, IOException {
@@ -298,8 +299,8 @@ public abstract class AbstractProxy {
     /**
      * Stores given two lines into {@code fileName} file.
      *
-     * @param fileName file name
-     * @param firstLine first line
+     * @param fileName   file name
+     * @param firstLine  first line
      * @param secondLine second line
      * @throws IOException if the {@code fileName} file cannot be created or written to
      */
