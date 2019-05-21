@@ -61,12 +61,12 @@ public class Util {
      * @return trimmed byte array
      */
     private static byte[] trimLeadingZeroes(byte[] array) {
-        short startOffset = 0;
+        int startOffset = 0;
 
-        while (array[startOffset] == 0)
+        while (array[startOffset] == 0x00)
             startOffset++;
 
-        return Arrays.copyOfRange(array, startOffset, array.length - startOffset);
+        return Arrays.copyOfRange(array, startOffset, array.length);
     }
 
 }

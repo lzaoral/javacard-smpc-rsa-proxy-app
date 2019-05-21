@@ -37,15 +37,12 @@ public class CardManager {
             System.out.print("Looking for physical cards... ");
 
         TerminalFactory factory = TerminalFactory.getDefault();
-        List<CardTerminal> terminals = new ArrayList<>();
 
-        boolean cardFound = false;
-
+        CardTerminal terminal = null;
         try {
             for (CardTerminal t : factory.terminals().list()) {
-                terminals.add(t);
                 if (t.isCardPresent())
-                    cardFound = true;
+                    terminal = t;
             }
 
             if (bDebug)
@@ -54,10 +51,8 @@ public class CardManager {
             return false;
         }
 
-        if (!cardFound)
+        if (terminal == null)
             return false;
-
-        CardTerminal terminal = terminals.get(0); // Prioritize physical card over simulations
 
         if (bDebug)
             System.out.print("Connecting...");
