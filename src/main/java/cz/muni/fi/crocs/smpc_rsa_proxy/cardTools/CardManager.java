@@ -8,9 +8,6 @@ import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 import javax.smartcardio.TerminalFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * The {@link CardManager} class represents a connection
  * to a smart card.
