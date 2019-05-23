@@ -239,8 +239,13 @@ public abstract class AbstractProxy {
     /**
      * Loads the data to the given {@code cmdA} and {@code cmdB} lists.
      *
-     * @param cmdA list of commands to transfer the first line to smart card
-     * @param cmdB list of commands tor transfer the second line to smart card
+     * @param fileName file name
+     * @param cmdA     list of commands to transfer the first line to smart card
+     * @param cmdB     list of commands tor transfer the second line to smart card
+     * @param cla      class byte
+     * @param ins      instruction byte
+     * @param p1D      parameter byte it the private exponent share
+     * @param p1N      parameter byte it the partial modulus share
      * @throws IOException if the file with keys is missing or cannot be read
      */
     protected void loadFile(String fileName, List<CommandAPDU> cmdA, List<CommandAPDU> cmdB, byte cla, byte ins,
