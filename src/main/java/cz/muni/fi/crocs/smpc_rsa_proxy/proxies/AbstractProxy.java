@@ -85,7 +85,7 @@ public abstract class AbstractProxy {
         if (!cardMgr.connect())
             throw new CardException("Make sure that the terminal and card are connected and that the correct applet is installed.\n\n" +
                     "Linux users beware: The path to 'libpcsclite.so' smart card library is hardcoded in the JDK.\n" +
-                    "Some distributions (e.g. Ubuntu) use different path. Try running the application\n" +
+                    "Some distributions (e.g. Ubuntu) use a different path. Try running the application\n" +
                     "with '-Dsun.security.smartcardio.library={path_to_libpcsclite}' flag\n" +
                     "or set the variable 'JAVA_TOOL_OPTIONS' to this value");
 
