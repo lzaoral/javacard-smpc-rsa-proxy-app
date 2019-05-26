@@ -44,8 +44,10 @@ public class Util {
      */
     public static byte[] hexStringToByteArray(String str) {
         String sanitized = str.replaceAll("\\s+", "");
-        byte[] b = new byte[sanitized.length() / 2];
+        if (sanitized.length() % 2 != 0)
+            sanitized = "0" + sanitized;
 
+        byte[] b = new byte[sanitized.length() / 2];
         for (int i = 0; i < b.length; i++) {
             int index = i * 2;
             b[i] = (byte) Integer.parseInt(sanitized.substring(index, index + 2), 16);
