@@ -14,6 +14,11 @@ if [ ! -f "./smpc_rsa" ]; then
     exit 1
 fi
 
+if [ ! -f "message.txt" ]; then
+    echo "Message file is missing in the 'build' directory. Creating one..."
+    echo "a454564654d654654e654654f654654" > message.txt
+fi
+
 # because someone thought that printing JAVA_TOOL_OPTIONS
 # to stderr is a great idea...
 JAVA="java ${JAVA_TOOL_OPTIONS}"
