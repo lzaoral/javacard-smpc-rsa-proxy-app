@@ -1,5 +1,8 @@
 # JavaCard SMPC RSA Proxy
 
+Proxy application providing the interface between the reference implementation
+and the on-card applet.
+
 The `CardManager.java` and `Util.java` files are based on the [JavaCard Template project with Gradle](https://github.com/crocs-muni/javacard-gradle-template-edu)
 project.
 
